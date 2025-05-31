@@ -33,15 +33,15 @@ blog-editor/
 
 🔧 Setup Instructions
 1. Clone the Repository
-git clone https://github.com/your-username/blog-editor.git
-cd blog-editor
+git clone https://github.com/kanishqdhangar/Blog-editor.git
+cd Blog-editor
 2. Setup Backend
 cd backend
 npm install
 Create a .env file and add:
 MONGO_URI=mongodb://localhost:27017/blog_editor
 Start backend:
-node app.js
+npm run dev
 3. Setup Frontend
 cd frontend
 npm install
