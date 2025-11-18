@@ -5,6 +5,15 @@ import { toast, ToastContainer } from 'react-toastify';
 
 const ToastifyCSS = 'https://cdnjs.cloudflare.com/ajax/libs/react-toastify/9.1.1/ReactToastify.min.css';
 
+// Type definition for the data expected to be returned/sent
+type Blog = {
+  _id?: string; // This means string | undefined
+  title: string;
+  content: string;
+  tags: string[];
+  status: 'draft' | 'published';
+};
+
 const API = {
   // Mock function to simulate an HTTP GET request
   get: async <T,>(url: string): Promise<{ data: T }> => {
@@ -12,7 +21,7 @@ const API = {
     await new Promise(resolve => setTimeout(resolve, 500)); 
     // Mock data for fetching an existing blog (only works if id is present)
     const blogId = url.replace('/', '');
-    if (blogId) {
+    if (blogId === 'mock-blog-123') {
       return {
         data: {
           _id: blogId,
@@ -23,35 +32,31 @@ const API = {
         } as T,
       };
     }
+    // If a different mock ID is used or no data, throw an error
     throw new Error('No mock data for ID');
   },
   // Mock function to simulate an HTTP POST request
-  post: async <T,>(url: string, payload: any): Promise<{ data: T }> => {
+  post: async <T,>(url: string, payload: object): Promise<{ data: T }> => {
     console.log(`MOCK API: POST ${url} with payload:`, payload);
     await new Promise(resolve => setTimeout(resolve, 500));
     
+    const blogPayload = payload as Blog;
+
     // Simulate ID generation for new drafts
-    const newId = payload.id || 'mock-' + Math.random().toString(36).substring(2, 9);
+    const newId = blogPayload._id || (blogPayload as any).id || 'mock-' + Math.random().toString(36).substring(2, 9);
 
     return {
       data: {
         _id: newId,
-        title: payload.title,
-        content: payload.content,
-        tags: payload.tags,
-        status: payload.status,
+        title: blogPayload.title,
+        content: blogPayload.content,
+        tags: blogPayload.tags,
+        status: blogPayload.status,
       } as T,
     };
   },
 };
 
-type Blog = {
-  _id?: string;
-  title: string;
-  content: string;
-  tags: string[];
-  status: 'draft' | 'published';
-};
 
 export default function BlogEditor() {
   const [title, setTitle] = useState('');
@@ -62,7 +67,7 @@ export default function BlogEditor() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  
+  // Next.js Navigation Fix: Simulate router and searchParams locally
   const idFromQuery = 'mock-blog-123'; // Hardcoded mock ID to demonstrate editing mode
   const router = {
       push: (path: string) => {
@@ -90,8 +95,8 @@ export default function BlogEditor() {
       }
 
       try {
-        const payload = {
-          ...(blogId ? { id: blogId } : {}),
+        const payload: Blog = {
+          _id: blogId ?? undefined,
           title,
           content,
           tags: tags.split(',').map((tag) => tag.trim()),
@@ -131,7 +136,7 @@ export default function BlogEditor() {
         setStatus(blog.status);
         toast.success(`Loaded blog: ${blog.title}`);
       } catch (_err) {
-        // FIX: Replaced 'err' with '_err' to comply with @typescript-eslint/no-unused-vars
+        // Unused variable already fixed in previous iteration
         toast.error('Failed to load blog for editing. Starting new draft.');
         setBlogId(null);
       }
@@ -165,7 +170,7 @@ export default function BlogEditor() {
     return () => {
         if (timerRef.current) clearTimeout(timerRef.current);
     }
-  }, [title, content, tags, status, saveDraft]); // FIX: Added saveDraft to dependencies
+  }, [title, content, tags, status, saveDraft]); 
 
   const publish = async () => {
     if (timerRef.current) {
@@ -174,8 +179,9 @@ export default function BlogEditor() {
     }
 
     try {
-      const payload = {
-        id: blogId,
+      const payload: Blog = {
+        // FIX: Use ?? undefined to convert string | null to string | undefined
+        _id: blogId ?? undefined,
         title,
         content,
         tags: tags.split(',').map((tag) => tag.trim()),
@@ -202,7 +208,6 @@ export default function BlogEditor() {
   }
 
   return (
-    
     <>
       <link rel="stylesheet" href={ToastifyCSS} />
       <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-lg mt-10">
